@@ -4,6 +4,16 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LBS Allotment Predictor — Kerala 2025</title>
+
+<!-- Google tag (gtag.js) — GA4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H7R9CGD92J"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  gtag('js', new Date());
+  gtag('config', 'G-H7R9CGD92J');
+</script>
+
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -55,6 +65,13 @@
   .notemini { display:inline-flex; align-items:center; gap:6px; margin-top:14px; font-size:12.5px; color:#9a7b1a; background:#fff8e6; border:1px solid #f0d98a; border-radius:20px; padding:4px 12px; cursor:pointer; }
   .notemini:hover { background:#fdf0c8; }
   footer { margin-top:30px; font-size:12px; color:#8a98aa; text-align:center; }
+  .cookie { position:fixed; left:12px; right:12px; bottom:12px; z-index:50; margin:0 auto; max-width:760px;
+            background:#16243a; color:#e6edf5; border-radius:10px; box-shadow:0 4px 18px rgba(0,0,0,.25);
+            padding:12px 14px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:13px; line-height:1.45; }
+  .cookie a { color:#9cc3ff; }
+  .cookie .sp { flex:1; min-width:200px; }
+  .cookie button { background:#3a72c4; color:#fff; border:none; border-radius:7px; padding:8px 16px; font-size:13px; font-weight:600; cursor:pointer; }
+  .cookie button:hover { background:#2f60aa; }
 </style>
 </head>
 <body>
@@ -273,10 +290,33 @@ function College({ courseVal, value }) {
   );
 }
 
+function CookieNotice() {
+  const [show, setShow] = useState(localStorage.getItem('lbsCookieOk') !== '1');
+  if (!show) return null;
+  return (
+    <div className="cookie">
+      <span className="sp">🍪 We use <b>Google Analytics</b> to understand how this site is used (e.g. visitor counts).
+        It sets cookies. By continuing to use the site, you consent to this.</span>
+      <button onClick={() => { localStorage.setItem('lbsCookieOk', '1'); setShow(false); }}>Got it</button>
+    </div>
+  );
+}
+
 function App() {
   const hash = useHashRoute();
+  // Count hash-route views in GA4 (SPA navigation doesn't trigger a page load).
+  useEffect(() => {
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', 'page_view', { page_path: window.location.pathname + (hash || '#/') });
+    }
+  }, [hash]);
   const m = hash.match(/^#\/c\/([^/]+)\/(.+)$/);
-  return m ? <College courseVal={decodeURIComponent(m[1])} value={decodeURIComponent(m[2])} /> : <Home />;
+  return (
+    <>
+      {m ? <College courseVal={decodeURIComponent(m[1])} value={decodeURIComponent(m[2])} /> : <Home />}
+      <CookieNotice />
+    </>
+  );
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
