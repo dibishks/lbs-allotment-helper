@@ -1,10 +1,15 @@
 # Local data pipeline — not deployed to GitHub Pages
 nursing2025.db
+lbs2025.db
 raw/
+raw_all/
 scrape.js
+scrape-all.js
 categorize.js
 export-data.js
 check.js
+check-all.js
+*.output
 
 # scratch / OS
 *.log

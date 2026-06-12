@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>LBS Nursing 2025 — College Predictor</title>
+<title>LBS Allotment Predictor — Kerala 2025</title>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -20,9 +20,11 @@
   header.top .sub { color:#9fb3cc; font-size:13px; }
   .panel { background:#fff; border:1px solid var(--line); border-radius:10px; padding:18px; margin-top:18px; box-shadow:0 1px 2px rgba(0,0,0,.03); }
   label.fld { font-weight:600; font-size:14px; display:block; margin-bottom:6px; }
-  .markrow { display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; }
-  input[type=number] { font-size:24px; padding:10px 14px; width:180px; border:2px solid #c7d0db; border-radius:8px; }
-  input[type=number]:focus { outline:none; border-color:var(--self); }
+  .courserow { margin-bottom:14px; }
+  .courserow select { font-size:16px; padding:9px 12px; width:100%; max-width:520px; border:2px solid #c7d0db; border-radius:8px; }
+  .markrow { display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; }
+  input[type=number] { font-size:24px; padding:10px 14px; width:170px; border:2px solid #c7d0db; border-radius:8px; }
+  input[type=number]:focus, select:focus { outline:none; border-color:var(--self); }
   .hint { color:#5c6b7d; font-size:13px; }
   .toggle { font-size:14px; display:flex; align-items:center; gap:6px; cursor:pointer; }
   .summary { display:flex; gap:18px; flex-wrap:wrap; margin-top:10px; font-size:14px; }
@@ -32,7 +34,7 @@
   h2.self { border-color:var(--self); color:var(--self); }
   table { width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); border-radius:8px; overflow:hidden; font-size:14px; }
   th, td { padding:9px 10px; text-align:left; border-bottom:1px solid var(--line); }
-  th { background:#eef2f6; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.03em; color:#46586d; cursor:pointer; user-select:none; }
+  th { background:#eef2f6; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.03em; color:#46586d; }
   tbody tr { cursor:pointer; }
   tbody tr:hover { background:#f0f6ff; }
   td.num, th.num { text-align:right; font-variant-numeric: tabular-nums; }
@@ -57,8 +59,8 @@
 </head>
 <body>
 <header class="top"><div class="wrap">
-  <h1>LBS Nursing 2025 · College Predictor</h1>
-  <span class="sub">B.Sc. Nursing — based on last year's allotment cutoffs</span>
+  <h1>LBS Allotment Predictor</h1>
+  <span class="sub">Kerala Nursing &amp; Paramedical 2025 — based on last year's allotment cutoffs</span>
 </div></header>
 <div id="root" class="wrap"></div>
 <footer class="wrap">Data: lbscentre.in 2025 allotment · Predictions are indicative only, based on last year's last-allotted index marks.</footer>
@@ -66,11 +68,11 @@
 <script type="text/babel">
 const { useState, useEffect, useMemo } = React;
 const DATA = window.LBS_DATA;
-const COLLEGES = DATA.colleges;
-const BYVAL = Object.fromEntries(COLLEGES.map(c => [c.value, c]));
+const COURSES = DATA.courses;
+const COURSE_BY_VAL = Object.fromEntries(COURSES.map(c => [c.value, c]));
 const cleanName = n => n.replace(/^[A-Z]+\s*-\s*/, '');
+const courseLabel = n => n.replace(/\s*\(.*?\)\s*$/, '').trim() || n; // drop trailing "(...)"
 
-// Well-known Kerala quota labels (codes without a confident label show as-is).
 const QUOTA_LABEL = {
   SM:'State Merit (General)', SC:'Scheduled Caste', ST:'Scheduled Tribe',
   EZ:'Ezhava (EZ)', MU:'Muslim (MU)', LC:'Latin Catholic / SIUC (LC)',
@@ -92,26 +94,33 @@ const go = (h) => { window.location.hash = h; window.scrollTo(0, 0); };
 
 // ---------------- Home / search ----------------
 function Home() {
+  const [courseVal, setCourseVal] = useState(() => {
+    const saved = localStorage.getItem('lbsCourse');
+    return COURSE_BY_VAL[saved] ? saved : COURSES[0].value;
+  });
   const [markStr, setMarkStr] = useState(localStorage.getItem('lbsMark') || '');
+  const [quota, setQuota] = useState('ALL');
   const [showAll, setShowAll] = useState(false);
-  const [quota, setQuota] = useState(localStorage.getItem('lbsQuota') || 'ALL');
   const [noteOpen, setNoteOpen] = useState(localStorage.getItem('lbsNoteHidden') !== '1');
+
+  const course = COURSE_BY_VAL[courseVal];
   const mark = parseFloat(markStr);
   const hasMark = !isNaN(mark);
+
+  useEffect(() => { localStorage.setItem('lbsCourse', courseVal); }, [courseVal]);
   useEffect(() => { if (markStr) localStorage.setItem('lbsMark', markStr); }, [markStr]);
-  useEffect(() => { localStorage.setItem('lbsQuota', quota); }, [quota]);
   const hideNote = () => { setNoteOpen(false); localStorage.setItem('lbsNoteHidden', '1'); };
   const showNote = () => { setNoteOpen(true); localStorage.setItem('lbsNoteHidden', '0'); };
+  const onCourse = (v) => { setCourseVal(v); setQuota('ALL'); }; // quota sets differ per course
 
-  // Cutoff to compare against, given the selected quota.
   const cutoffOf = (c) => quota === 'ALL' ? c.cutoff : (c.cutoffs[quota] ?? null);
 
   const lists = useMemo(() => {
     const eligible = (c) => { const cut = cutoffOf(c); return cut != null && (showAll || (hasMark && mark >= cut)); };
     const sort = arr => arr.slice().sort((a, b) => (cutoffOf(b) ?? -1) - (cutoffOf(a) ?? -1));
-    const pick = cat => sort(COLLEGES.filter(c => c.category === cat && eligible(c)));
+    const pick = cat => sort(course.colleges.filter(c => c.category === cat && eligible(c)));
     return { govt: pick('Government'), self: pick('Self-financing') };
-  }, [mark, hasMark, showAll, quota]);
+  }, [courseVal, mark, hasMark, showAll, quota]);
 
   const total = lists.govt.length + lists.self.length;
 
@@ -122,21 +131,31 @@ function Home() {
             <button className="x" onClick={hideNote} title="Dismiss" aria-label="Dismiss note">×</button>
             <b>⚠ Please note:</b> This tool shows information based purely on the <b>2025 LBS allotment list</b> marks.
             The predictions are based only on last year's data and are <b>indicative only</b> —
-            they are <b>not a guarantee</b> of allotment. Actual 2026 cutoffs depend on that year's applicants,
+            they are <b>not a guarantee</b> of allotment. Actual cutoffs depend on that year's applicants,
             seat matrix and ranks, and may differ. Always rely on the official LBS Centre allotment for final decisions.
           </div>
         : <div className="notemini" onClick={showNote}>⚠ Indicative only — based on 2025 data, not a guarantee. <u>Read more</u></div>}
+
       <div className="panel">
-        <label className="fld" htmlFor="mk">Enter your Index Mark (out of {DATA.maxIndex})</label>
+        <div className="courserow">
+          <label className="fld" htmlFor="cs">Course</label>
+          <select id="cs" value={courseVal} onChange={e => onCourse(e.target.value)}>
+            {COURSES.map(c => <option key={c.value} value={c.value}>{c.name} · {c.colleges.length} colleges</option>)}
+          </select>
+        </div>
+
         <div className="markrow">
-          <input id="mk" type="number" min="0" max={DATA.maxIndex} step="0.01"
-                 placeholder="e.g. 283" value={markStr}
-                 onChange={e => setMarkStr(e.target.value)} />
+          <div>
+            <label className="fld" htmlFor="mk">Your Index Mark</label>
+            <input id="mk" type="number" min="0" max={course.maxIndex} step="0.01"
+                   placeholder="e.g. 283" value={markStr}
+                   onChange={e => setMarkStr(e.target.value)} />
+          </div>
           <div>
             <label className="fld" htmlFor="qt">Filter by Quota</label>
             <select id="qt" value={quota} onChange={e => setQuota(e.target.value)}>
               <option value="ALL">All quotas</option>
-              {DATA.quotas.map(q => <option key={q} value={q}>{quotaText(q)}</option>)}
+              {course.quotas.map(q => <option key={q} value={q}>{quotaText(q)}</option>)}
             </select>
           </div>
           <label className="toggle">
@@ -144,6 +163,8 @@ function Home() {
             Show all colleges (ignore my mark)
           </label>
         </div>
+
+        <p className="hint">Last year's highest index in this course: <b>{course.maxIndex}</b>. {course.colleges.length} colleges offered it.</p>
         {hasMark && !showAll &&
           <div className="summary">
             <span>Colleges you could be allotted: <b>{total}</b></span>
@@ -154,13 +175,13 @@ function Home() {
         {quota !== 'ALL' && <p className="hint">Showing only colleges that allotted seats under <b>{quotaText(quota)}</b> last year. Cutoff column = lowest index allotted in that quota.</p>}
       </div>
 
-      <CategoryTable title="Government Colleges" cls="govt" rows={lists.govt} mark={mark} hasMark={hasMark} quota={quota} cutoffOf={cutoffOf} />
-      <CategoryTable title="Self-financing Colleges" cls="self" rows={lists.self} mark={mark} hasMark={hasMark} quota={quota} cutoffOf={cutoffOf} />
+      <CategoryTable title="Government Colleges" cls="govt" rows={lists.govt} mark={mark} hasMark={hasMark} quota={quota} cutoffOf={cutoffOf} courseVal={courseVal} />
+      <CategoryTable title="Self-financing Colleges" cls="self" rows={lists.self} mark={mark} hasMark={hasMark} quota={quota} cutoffOf={cutoffOf} courseVal={courseVal} />
     </div>
   );
 }
 
-function CategoryTable({ title, cls, rows, mark, hasMark, quota, cutoffOf }) {
+function CategoryTable({ title, cls, rows, mark, hasMark, quota, cutoffOf, courseVal }) {
   const allQuotas = quota === 'ALL';
   const cutHead = allQuotas ? 'Last Allotted' : `Last Allotted (${quota})`;
   return (
@@ -181,7 +202,7 @@ function CategoryTable({ title, cls, rows, mark, hasMark, quota, cutoffOf }) {
                 const cut = cutoffOf(c);
                 const margin = hasMark && cut != null ? (mark - cut) : null;
                 return (
-                  <tr key={c.value} onClick={() => go('#/c/' + c.value)}>
+                  <tr key={c.value} onClick={() => go('#/c/' + courseVal + '/' + c.value)}>
                     <td><span className="code">{c.code}</span></td>
                     <td>{cleanName(c.name)}</td>
                     <td className="num">{cut != null ? cut.toFixed(2) : '—'}</td>
@@ -205,11 +226,12 @@ const COLS = [
 ];
 const NUMCOLS = new Set(['sl','idx']);
 
-function College({ value }) {
-  const c = BYVAL[value];
-  const rows = DATA.allotments[value] || [];
+function College({ courseVal, value }) {
+  const course = COURSE_BY_VAL[courseVal];
+  const c = course && course.colleges.find(x => x.value === value);
+  const rows = DATA.allotments[courseVal + '__' + value] || [];
   const [quota, setQuota] = useState('ALL');
-  const quotas = useMemo(() => ['ALL', ...Array.from(new Set(rows.map(r => r.q).filter(Boolean))).sort()], [value]);
+  const quotas = useMemo(() => ['ALL', ...Array.from(new Set(rows.map(r => r.q).filter(Boolean))).sort()], [courseVal, value]);
   const shown = quota === 'ALL' ? rows : rows.filter(r => r.q === quota);
 
   if (!c) return <div className="panel">Unknown college. <span className="backlink" onClick={() => go('#/')}>← Back</span></div>;
@@ -218,7 +240,7 @@ function College({ value }) {
       <span className="backlink" onClick={() => go('#/')}>← Back to predictor</span>
       <div className="panel">
         <h2 style={{margin:'0 0 4px'}}>{cleanName(c.name)}</h2>
-        <div className="muted">{c.code} · <span className={"pill " + (c.category==='Government'?'ok':'')}>{c.category}</span></div>
+        <div className="muted">{c.code} · <span className={"pill " + (c.category==='Government'?'ok':'')}>{c.category}</span> · {course.name}</div>
         <div className="stats">
           <div className="stat"><div className="k">Seats allotted</div><div className="v">{c.allotted}</div></div>
           <div className="stat"><div className="k">Top index</div><div className="v">{c.top != null ? c.top.toFixed(2) : '—'}</div></div>
@@ -253,8 +275,8 @@ function College({ value }) {
 
 function App() {
   const hash = useHashRoute();
-  const m = hash.match(/^#\/c\/(.+)$/);
-  return m ? <College value={decodeURIComponent(m[1])} /> : <Home />;
+  const m = hash.match(/^#\/c\/([^/]+)\/(.+)$/);
+  return m ? <College courseVal={decodeURIComponent(m[1])} value={decodeURIComponent(m[2])} /> : <Home />;
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
