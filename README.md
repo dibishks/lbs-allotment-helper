@@ -1,7 +1,7 @@
 # LBS Allotment Helper
 
 A simple static tool that helps Kerala LBS Centre applicants estimate which colleges they
-might be allotted, based on the **previous year's allotment list** index marks.
+might be allotted, based on the **previous year's allotment list** index marks..
 
 🔗 **Live:** https://dibishks.github.io/lbs-allotment-helper/
 
